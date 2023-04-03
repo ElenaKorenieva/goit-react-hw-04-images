@@ -1,89 +1,84 @@
-import React, { Component } from 'react';
+import { useState, useEffect } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { Api } from './Api';
 import { Button } from './Button';
 import { ImageGallery } from './ImageGallery';
 import { Loader } from './Loader/Loader';
 import { Modal } from './Modal';
 import { Searchbar } from './Searchbar';
+import { Section, Wrapper } from './App.styled';
 
-export class App extends Component {
-  state = {
-    images: [],
-    isLoading: false,
-    currentSearch: '',
-    pageNum: 1,
-    modalOpen: false,
-    largeImg: '',
-    isOpen: false,
-    totalHits: null,
-    error: false,
-  };
+export const App = () => {
+  const [currentSearch, setCurrentSearch] = useState('');
+  const [pageNum, setPageNum] = useState(1);
+  const [images, setImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [totalHits, setTotalHits] = useState(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [largeImg, setLargeImg] = useState('');
 
-  async componentDidUpdate(_, prevState) {
-    const { currentSearch, pageNum } = this.state;
-
-    try {
-      if (
-        currentSearch !== prevState.currentSearch ||
-        pageNum !== prevState.pageNum
-      ) {
-        this.setState({ isLoading: true });
-        const images = await Api(currentSearch, pageNum);
-        this.setState(prevState => {
-          const { hits, totalHits } = images;
-          return {
-            images: [...prevState.images, ...hits],
-            isLoading: false,
-            totalHits: totalHits,
-          };
-        });
-      }
-    } catch (error) {
-      this.setState({ error: true, isLoading: false });
-      console.log(error);
+  useEffect(() => {
+    if (currentSearch === '') {
+      return;
     }
-  }
-
-  onSubmitForm = currentSearch => {
-    this.setState(prevState => {
-      if (currentSearch === this.state.currentSearch) {
-        return prevState;
+    setIsLoading(true);
+    const fetchData = async () => {
+      const images = await Api(currentSearch, pageNum);
+      const { totalHits, hits } = images;
+      setImages(prevImages => {
+        return [...prevImages, ...hits];
+      });
+      if (!totalHits) {
+        toast.error('Did not find anything!');
+      } else if (pageNum === 1) {
+        toast.success(`Hooray! We found ${totalHits} images!`);
       }
-      return { currentSearch, pageNum: 1, images: [] };
-    });
+
+      setTotalHits(totalHits);
+      setIsLoading(false);
+    };
+    fetchData();
+  }, [pageNum, currentSearch]);
+
+  const onFormSubmit = query => {
+    if (query === currentSearch) {
+      return;
+    }
+    setCurrentSearch(query);
+    setPageNum(1);
+    setImages([]);
   };
 
-  onButtonClick = () => {
-    this.setState(prevState => {
-      return { pageNum: prevState.pageNum + 1, isLoading: true };
-    });
+  const onButtonClick = () => {
+    setPageNum(prevPage => prevPage + 1);
+    setIsLoading(true);
   };
 
-  toggleModal = () => {
-    this.setState(prevState => ({ isOpen: !prevState.isOpen }));
+  const toggleModal = () => {
+    setIsOpen(prevIsOpen => !prevIsOpen);
   };
 
-  showLargeImg = largeImg => {
-    this.setState({ largeImg });
+  const showLargeImg = largeImg => {
+    setLargeImg(largeImg);
   };
 
-  render() {
-    return (
-      <div>
-        <Searchbar onSubmit={this.onSubmitForm} />
-        <ImageGallery
-          images={this.state.images}
-          onClickImg={this.showLargeImg}
-          toggleModal={this.toggleModal}
-        />
-        {this.state.isOpen && (
-          <Modal closeModal={this.toggleModal} largeImg={this.state.largeImg} />
-        )}
-        {this.state.images.length < this.state.totalHits ? (
-          <Button onClick={this.onButtonClick} />
-        ) : null}
-        {this.state.isLoading && <Loader />}
-      </div>
-    );
-  }
-}
+  return (
+    <Section>
+      <Searchbar onSubmit={onFormSubmit} />
+      <ImageGallery
+        images={images}
+        onClickImg={showLargeImg}
+        toggleModal={toggleModal}
+      />
+      {isOpen && <Modal onModalClose={toggleModal} largeImg={largeImg} />}
+      {images.length < totalHits ? (
+        <Wrapper>
+          <Button onClick={onButtonClick} />
+        </Wrapper>
+      ) : null}
+      {isLoading && <Loader />}
+      <ToastContainer autoClose={3000} />
+    </Section>
+  );
+};

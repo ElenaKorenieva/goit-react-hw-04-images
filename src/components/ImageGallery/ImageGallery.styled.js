@@ -2,6 +2,7 @@ import styled from 'styled-components';
 
 export const StyledImageGallery = styled.ul`
   display: grid;
+  align-items: center;
   max-width: calc(100vw - 48px);
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   grid-gap: 16px;

@@ -1,9 +1,9 @@
 import axios from 'axios';
 import PropTypes from 'prop-types';
 
-export const Api = async (searchValue, page) => {
+export const Api = async (searchValue, pageNum) => {
   const response = await axios.get(
-    `https://pixabay.com/api/?key=30860486-2bc10cd6f698c5db7e18c3090&q=${searchValue}&safesearch=true&orientation=horizontal&per_page=20&page=${page}`
+    `https://pixabay.com/api/?key=30860486-2bc10cd6f698c5db7e18c3090&q=${searchValue}&safesearch=true&orientation=horizontal&per_page=20&page=${pageNum}`
   );
 
   return response.data;
